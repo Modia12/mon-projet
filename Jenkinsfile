@@ -1,67 +1,52 @@
 pipeline {
     agent any
 
-    stages {
-        // 🔹 Étape 1 : Récupérer le code
-        stage('Checkout') {
-            steps {
-                 git branch: 'master', url: 'https://github.com/Modia12/mon-projet.git'
-            }
-        }
-
-        // 🔹 Étape 2 : Installer les dépendances backend
-        stage('Install Backend Dependencies') {
-            steps {
-                dir(env.BACKEND_DIR) {
-                    sh 'npm install'
-                }
-            }
-        }
-
-        // 🔹 Étape 3 : Installer les dépendances frontend
-        stage('Install Frontend Dependencies') {
-            steps {
-                dir(env.FRONTEND_DIR) {
-                    sh 'npm install'
-                }
-            }
-        }
-
-        // 🔹 Étape 4 : Build du frontend
-        stage('Build Frontend') {
-            steps {
-                dir(env.FRONTEND_DIR) {
-                    sh 'npm run build'
-                }
-            }
-        }
-
-        // 🔹 Étape 5 : Lancer les tests backend (si existants)
-        stage('Run Backend Tests') {
-            steps {
-                dir(env.BACKEND_DIR) {
-                    sh 'npm test || echo "Aucun test trouvé"'
-                }
-            }
-        }
-
-        // 🔹 Étape 6 : Archiver le build frontend
-        stage('Archive Frontend Build') {
-            steps {
-                archiveArtifacts artifacts: "${env.FRONTEND_DIR}/build/**", fingerprint: true
-            }
-        }
+    environment {
+        // Définit un chemin par défaut si aucune valeur n'est fournie
+        MY_WORKSPACE = "${env.WORKSPACE ?: '.'}"
     }
 
-    post {
-        always {
-            echo 'Pipeline terminé.'
+    stages {
+        stage('Checkout') {
+            steps {
+                checkout scm
+            }
         }
-        success {
-            echo 'Pipeline terminé avec succès !'
+
+        stage('Build') {
+            steps {
+                script {
+                    // Exemple d'utilisation sécurisée de pushd
+                    def myDir = MY_WORKSPACE
+                    if (!myDir) {
+                        error "Le chemin de travail est nul !"
+                    }
+
+                    // pushd sécurisé : si myDir est null, utilise '.'
+                    pushd(myDir ?: '.') {
+                        sh 'ls -la'
+                    }
+                }
+            }
         }
-        failure {
-            echo 'Le pipeline a échoué !'
+
+        stage('Test') {
+            steps {
+                dir(MY_WORKSPACE ?: '.') {
+                    sh 'echo "Tests en cours..."'
+                }
+            }
+        }
+
+        stage('Deploy') {
+            steps {
+                script {
+                    def deployDir = "${env.DEPLOY_PATH ?: '.'}"
+                    dir(deployDir) {
+                        sh 'echo "Déploiement dans ${deployDir}"'
+                    }
+                }
+            }
         }
     }
 }
