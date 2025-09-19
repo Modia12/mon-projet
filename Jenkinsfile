@@ -1,20 +1,11 @@
 pipeline {
     agent any
 
-    tools {
-        nodejs 'NodeJS 18'  // Assure-toi que NodeJS 18 est configuré dans Jenkins Tools
-    }
-
-    environment {
-        FRONTEND_DIR = 'frontend'
-        BACKEND_DIR = 'backend'
-    }
-
     stages {
         // 🔹 Étape 1 : Récupérer le code
         stage('Checkout') {
             steps {
-                checkout scm
+                 git branch: 'master', url: 'https://github.com/Modia12/mon-projet.git'
             }
         }
 
