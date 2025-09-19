@@ -2,89 +2,78 @@ pipeline {
     agent any
 
     environment {
-        WORK_DIR = "${env.WORKSPACE ?: '.'}"
+        NODE_VERSION = '18'
+        FRONTEND_PORT = '3000'  // Port utilisé par React
+        BACKEND_PORT  = '5000'  // Port utilisé par le backend
     }
 
     stages {
+
         stage('Checkout') {
             steps {
                 checkout scm
             }
         }
 
-        stage('Build Frontend') {
+        stage('Install & Build Frontend') {
             steps {
-                script {
-                    def frontendDir = "${WORK_DIR}/frontend"
-                    echo "Build Frontend in ${frontendDir}"
-
-                    dir(frontendDir) {
-                        sh '''
-                            echo "=== Frontend Build ==="
-                            ls -la
-                            # npm install && npm run build
-                            echo "Simulate frontend build..."
-                        '''
-                    }
+                dir('frontend') {
+                    sh 'npm install'
+                    sh 'npm run build'
                 }
             }
         }
 
-        stage('Build Backend') {
+        stage('Install Backend') {
             steps {
-                script {
-                    def backendDir = "${WORK_DIR}/backend"
-                    echo "Build Backend in ${backendDir}"
-
-                    dir(backendDir) {
-                        sh '''
-                            echo "=== Backend Build ==="
-                            ls -la
-                            # mvn clean install OR your backend build command
-                            echo "Simulate backend build..."
-                        '''
-                    }
+                dir('backend') {
+                    sh 'npm install'
                 }
             }
         }
 
-        stage('Docker Compose Build') {
+        stage('Start Backend & Frontend for Testing') {
             steps {
                 script {
-                    def composeDir = WORK_DIR
-                    echo "Docker Compose in ${composeDir}"
-
-                    dir(composeDir) {
-                        sh '''
-                            echo "=== Docker Compose Build ==="
-                            ls -la
-                            # docker-compose build
-                            echo "Simulate docker-compose build..."
-                        '''
+                    // Démarrer backend en arrière-plan
+                    dir('backend') {
+                        sh 'nohup npm start &'
                     }
+
+                    // Démarrer frontend en arrière-plan (si tu veux tester avec dev server)
+                    dir('frontend') {
+                        sh 'nohup npm start &'
+                    }
+
+                    // Attendre quelques secondes pour que les services soient prêts
+                    sh 'sleep 10'
+
+                    // Vérifier que les ports répondent
+                    sh "curl -I http://localhost:${BACKEND_PORT}"
+                    sh "curl -I http://localhost:${FRONTEND_PORT}"
                 }
             }
         }
 
-        stage('Docker Compose Up') {
+        stage('Tests Unitaires') {
             steps {
-                script {
-                    def composeDir = WORK_DIR
-                    dir(composeDir) {
-                        sh '''
-                            echo "=== Docker Compose Up ==="
-                            # docker-compose up -d
-                            echo "Simulate docker-compose up..."
-                        '''
-                    }
+                dir('backend') {
+                    sh 'npm test'
                 }
+            }
+        }
+
+        stage('Deploy') {
+            steps {
+                echo 'Déploiement du projet (Docker ou autre)'
             }
         }
     }
 
     post {
         always {
-            echo "Pipeline finished."
+            echo 'Arrêt des services pour libérer les ports'
+            sh "pkill -f 'npm start'"  // Arrête tous les serveurs npm
         }
     }
 }
