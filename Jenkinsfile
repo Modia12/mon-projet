@@ -3,7 +3,7 @@ pipeline {
 
     environment {
         // Définit un chemin par défaut si aucune valeur n'est fournie
-        MY_WORKSPACE = "${env.WORKSPACE ?: '.'}"
+        MY_WORKSPACE = "docker-compose"
     }
 
     stages {
@@ -17,7 +17,7 @@ pipeline {
             steps {
                 script {
                     // Exemple d'utilisation sécurisée de pushd
-                    def myDir = MY_WORKSPACE
+                    def myDir = backend
                     if (!myDir) {
                         error "Le chemin de travail est nul !"
                     }
@@ -32,7 +32,7 @@ pipeline {
 
         stage('Test') {
             steps {
-                dir(MY_WORKSPACE ?: '.') {
+                dir(backend ?: '.') {
                     sh 'echo "Tests en cours..."'
                 }
             }
