@@ -2,8 +2,7 @@ pipeline {
     agent any
 
     environment {
-        // Définit un chemin par défaut si aucune valeur n'est fournie
-        MY_WORKSPACE = "docker-compose"
+        WORK_DIR = "${env.WORKSPACE ?: '.'}"
     }
 
     stages {
@@ -13,40 +12,79 @@ pipeline {
             }
         }
 
-        stage('Build') {
+        stage('Build Frontend') {
             steps {
                 script {
-                    // Exemple d'utilisation sécurisée de pushd
-                    def myDir = backend
-                    if (!myDir) {
-                        error "Le chemin de travail est nul !"
-                    }
+                    def frontendDir = "${WORK_DIR}/frontend"
+                    echo "Build Frontend in ${frontendDir}"
 
-                    // pushd sécurisé : si myDir est null, utilise '.'
-                    pushd(myDir ?: '.') {
-                        sh 'ls -la'
+                    dir(frontendDir) {
+                        sh '''
+                            echo "=== Frontend Build ==="
+                            ls -la
+                            # npm install && npm run build
+                            echo "Simulate frontend build..."
+                        '''
                     }
                 }
             }
         }
 
-        stage('Test') {
+        stage('Build Backend') {
             steps {
-                dir(backend ?: '.') {
-                    sh 'echo "Tests en cours..."'
+                script {
+                    def backendDir = "${WORK_DIR}/backend"
+                    echo "Build Backend in ${backendDir}"
+
+                    dir(backendDir) {
+                        sh '''
+                            echo "=== Backend Build ==="
+                            ls -la
+                            # mvn clean install OR your backend build command
+                            echo "Simulate backend build..."
+                        '''
+                    }
                 }
             }
         }
 
-        stage('Deploy') {
+        stage('Docker Compose Build') {
             steps {
                 script {
-                    def deployDir = "${env.DEPLOY_PATH ?: '.'}"
-                    dir(deployDir) {
-                        sh 'echo "Déploiement dans ${deployDir}"'
+                    def composeDir = WORK_DIR
+                    echo "Docker Compose in ${composeDir}"
+
+                    dir(composeDir) {
+                        sh '''
+                            echo "=== Docker Compose Build ==="
+                            ls -la
+                            # docker-compose build
+                            echo "Simulate docker-compose build..."
+                        '''
                     }
                 }
             }
+        }
+
+        stage('Docker Compose Up') {
+            steps {
+                script {
+                    def composeDir = WORK_DIR
+                    dir(composeDir) {
+                        sh '''
+                            echo "=== Docker Compose Up ==="
+                            # docker-compose up -d
+                            echo "Simulate docker-compose up..."
+                        '''
+                    }
+                }
+            }
+        }
+    }
+
+    post {
+        always {
+            echo "Pipeline finished."
         }
     }
 }
