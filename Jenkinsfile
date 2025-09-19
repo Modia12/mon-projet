@@ -8,8 +8,8 @@ pipeline {
     environment {
         FRONTEND_DIR = 'frontend'
         BACKEND_DIR = 'backend'
-        FRONTEND_PORT = '5000'   // port local pour test frontend
-        BACKEND_PORT = '3000'    // port backend
+//        FRONTEND_PORT = '5000'   // port local pour test frontend
+  //      BACKEND_PORT = '3000'    // port backend
     }
 
     stages {
